@@ -1,16 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BrowserBot web components</title>
-</head>
-<body>
-<test-component name="Pippo"></test-component>
-<test2-component name="Pluto"></test2-component>
-<p>This section is not affected by the component styles</p>
-<script type="module" src="src/test/test.component.ts"></script>
-<script type="module" src="src/test2/test2.component.ts"></script>
-</body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Flint SDK Demo</title>
+	</head>
+	<body>
+		<div class="container mx-auto p-4">
+			<h1 class="text-2xl font-bold mb-4">Flint SDK Demo</h1>
+
+			<!-- Flint Form -->
+			<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+				<flint-form id="my-form"></flint-form>
+			</div>
+
+			<!-- Existing test components -->
+			<div class="mt-8">
+				<h2 class="text-xl font-semibold mb-4">Test Components</h2>
+				<test-component name="Pippo"></test-component>
+				<test2-component name="Pluto"></test2-component>
+				<p class="mt-2 text-gray-600">
+					This section is not affected by the component styles
+				</p>
+			</div>
+		</div>
+
+		<!-- Import the Flint SDK and initialize the form -->
+		<script type="module">
+			// Import from the compiled output directory
+			// import { FlintSDK } from './dist/flint-sdk/FlintSDK.js';
+			import { FlintSDK } from '/dist/flint-sdk.js';
+
+			// Sample form schema
+			const sampleSchema = {
+				id: 'sample-form',
+				name: 'Sample Form',
+				fields: [
+					{
+						id: 'name',
+						name: 'name',
+						type: 'text',
+						label: 'Full Name',
+						required: true,
+						helperText: 'Please enter your full name',
+						placeholder: 'John Doe',
+					},
+					{
+						id: 'email',
+						name: 'email',
+						type: 'text',
+						label: 'Email Address',
+						required: true,
+						helperText: 'Please enter a valid email address',
+						placeholder: 'john@example.com',
+					},
+				],
+			};
+
+			// Initialize the form with the sample schema
+			document.addEventListener('DOMContentLoaded', () => {
+				const form = document.getElementById('my-form');
+				if (form) {
+					form.schema = sampleSchema;
+				}
+
+				// Initialize FlintSDK if needed
+				// const flint = new FlintSDK('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
+			});
+
+			// Initialize the SDK with your Supabase credentials
+			const flint = new FlintSDK(
+				import.meta.env.VITE_SUPABASE_URL || '',
+				import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+			);
+
+			const form = document.getElementById('my-form');
+
+			// Load schema when the component is ready
+			form.addEventListener('ready', async () => {
+				try {
+					const schema = await flint.loadSchema('your-schema-id');
+					form.schema = schema;
+				} catch (error) {
+					console.error('Failed to load schema:', error);
+				}
+			});
+
+			// Handle form submission
+			form.addEventListener('submit', async e => {
+				try {
+					const result = await flint.submitForm(
+						'your-schema-id',
+						e.detail.data
+					);
+					if (result.success) {
+						alert('Form submitted successfully!');
+					} else {
+						console.error('Form submission failed:', result.error);
+						alert(
+							'Form submission failed. Please check the console for details.'
+						);
+					}
+				} catch (error) {
+					console.error('Error submitting form:', error);
+					alert('An error occurred while submitting the form.');
+				}
+			});
+		</script>
+
+		<!-- Existing component scripts -->
+		<script type="module" src="/src/test/test.component.ts"></script>
+		<script type="module" src="/src/test2/test2.component.ts"></script>
+	</body>
 </html>
