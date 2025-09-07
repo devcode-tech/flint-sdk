@@ -1,13 +1,37 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { FormSchema, FormData, FormSubmitResponse } from './types';
+import {
+	FormSchema,
+	FormData,
+	FormSubmitResponse,
+	DatabaseFormSchema,
+} from './types';
+
+// Default configuration that can be overridden
+const defaultConfig = {
+	supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+	supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+};
+
+export interface FlintSDKConfig {
+	supabaseUrl: string;
+	supabaseKey: string;
+}
 
 export class FlintSDK {
 	private supabase!: SupabaseClient;
 	private initialized = false;
+	private readonly TABLE_NAME = 'form_schemas';
 
-	constructor(supabaseUrl?: string, supabaseKey?: string) {
-		if (supabaseUrl && supabaseKey) {
-			this.init(supabaseUrl, supabaseKey);
+	constructor(config?: Partial<FlintSDKConfig>) {
+		// Merge provided config with defaults
+		const finalConfig = { ...defaultConfig, ...config };
+
+		if (finalConfig.supabaseUrl && finalConfig.supabaseKey) {
+			this.init(finalConfig.supabaseUrl, finalConfig.supabaseKey);
+		} else {
+			console.warn(
+				'FlintSDK: Missing Supabase URL or Key. Call init() with valid credentials.'
+			);
 		}
 	}
 
@@ -24,23 +48,67 @@ export class FlintSDK {
 
 	public async loadSchema(schemaId: string): Promise<FormSchema> {
 		this.ensureInitialized();
-		const { data, error } = await this.supabase
-			.from('schemas')
-			.select('*')
-			.eq('id', schemaId)
-			.single();
-		if (error) throw new Error(`Failed to load schema: ${error.message}`);
-		return data as FormSchema;
+
+		try {
+			const { data, error } = await this.supabase
+				.from(this.TABLE_NAME)
+				.select('*')
+				.eq('id', schemaId)
+				.single<DatabaseFormSchema>();
+
+			if (error) {
+				throw new Error(`Failed to load schema: ${error.message}`);
+			}
+
+			if (!data) {
+				throw new Error(
+					`Schema with ID ${schemaId} not found in table ${this.TABLE_NAME}`
+				);
+			}
+
+			// Convert from database format to FormSchema
+			return {
+				id: data.id,
+				title: data.title,
+				description: data.description,
+				fields: data.schema?.fields || [],
+				submitText: data.schema?.submitText,
+				created_at: data.created_at,
+				updated_at: data.updated_at,
+			};
+		} catch (error) {
+			console.error('Error in loadSchema:', error);
+			throw error;
+		}
 	}
 
 	public async saveSchema(schema: FormSchema): Promise<string> {
 		this.ensureInitialized();
+
+		const dbSchema: Omit<
+			DatabaseFormSchema,
+			'id' | 'created_at' | 'updated_at'
+		> = {
+			title: schema.title,
+			description: schema.description || null,
+			schema: {
+				fields: schema.fields || [],
+				submitText: schema.submitText,
+			},
+		};
+
 		const { data, error } = await this.supabase
-			.from('schemas')
-			.upsert(schema)
-			.select()
+			.from(this.TABLE_NAME)
+			.upsert({
+				...(schema.id && { id: schema.id }),
+				...dbSchema,
+			} as any)
+			.select('id')
 			.single();
+
 		if (error) throw new Error(`Failed to save schema: ${error.message}`);
+		if (!data) throw new Error('No data returned from save operation');
+
 		return data.id;
 	}
 
@@ -50,9 +118,10 @@ export class FlintSDK {
 	): Promise<FormSubmitResponse> {
 		this.ensureInitialized();
 		try {
+			('unknown');
 			const { data, error } = await this.supabase
 				.from('form_submissions')
-				.insert([{ schema_id: schemaId, form_data: formData }])
+				.insert([{ form_id: schemaId, data: formData }])
 				.select();
 			if (error) throw error;
 			return { success: true, data: data[0] };
