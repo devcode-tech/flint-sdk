@@ -128,7 +128,7 @@ export class FlintForm extends TailwindElement(styles) {
 							const target = e.target as HTMLInputElement;
 							this.handleInput(field, target.value);
 						}}"
-						placeholder="${field.placeholder || 'sss'}"
+						placeholder="${field.placeholder || ''}"
 						?required="${field.required}"
 					/>
 				`;
