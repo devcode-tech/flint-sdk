@@ -1,0 +1,22 @@
+name: flint-sdk
+region: blr
+static_sites:
+  - name: flint-sdk
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: devcode-tech/flint-sdk
+    build_command: pnpm install --frozen-lockfile && pnpm build
+    output_dir: dist
+    source_dir: /
+    routes:
+      - path: /
+    envs:
+      - key: VITE_SUPABASE_URL
+        scope: BUILD_TIME
+        value: https://azgckzuuayxdwotufiah.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        scope: BUILD_TIME
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6Z2NrenV1YXl4ZHdvdHVmaWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyMzA1ODIsImV4cCI6MjA2NDgwNjU4Mn0.cYAbvGBTe1lXdQALFqRhsMnPdWK7gEU3j9WpXCKSS7g
+      - key: NPM_CONFIG_PRODUCTION
+        value: 'false'
