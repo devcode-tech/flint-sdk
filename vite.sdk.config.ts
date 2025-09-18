@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 
 export default defineConfig({
@@ -8,23 +7,16 @@ export default defineConfig({
 			entry: resolve(__dirname, 'src/flint-sdk/index.ts'),
 			name: 'FlintSDK',
 			fileName: 'flint-sdk',
-			formats: ['es', 'umd'],
+			formats: ['iife'], // Using IIFE for better browser compatibility
 		},
 		rollupOptions: {
-			external: ['@supabase/supabase-js', 'lit', 'uuid'],
+			// Remove external dependencies to bundle them
+			external: [], // Empty array means bundle everything
 			output: {
 				globals: {
-					'@supabase/supabase-js': 'supabase',
-					lit: 'lit',
-					uuid: 'uuid',
+					// No need for globals since we're bundling everything
 				},
 			},
 		},
 	},
-	plugins: [
-		dts({
-			insertTypesEntry: true,
-			tsconfigPath: './tsconfig.json',
-		}),
-	],
 });

@@ -30,14 +30,18 @@
 		</div>
 
 		<!-- Import the Flint SDK and initialize the form -->
-		<script type="module">
-			import { FlintSDK } from '/dist/flint-sdk.js';
+		<script type="module" crossorigin>
+			import '/dist/flint-sdk.iife.js';
+
+			// import { FlintSDK } from '/dist/flint-sdk.iife.js';
+			// import { FlintSDK } from 'https://flint-sdk-3g3mu.ondigitalocean.app/flint-sdk.js';
+			// import { FlintSDK } from 'https://flint-sdk-3g3mu.ondigitalocean.app/flint-sdk.iife.js';
 
 			// Initialize the SDK with configuration
-			const flint = new FlintSDK({
-				supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
-				supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-			});
+			// const flint = new FlintSDK({
+			// 	supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+			// 	supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+			// });
 
 			// Wait for the DOM to be fully loaded and custom elements to be defined
 			// 	customElements.whenDefined('flint-form').then(() => {
