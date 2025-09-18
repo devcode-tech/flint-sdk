@@ -92,10 +92,7 @@ export interface DatabaseFormSchema {
 	id: string;
 	title: string;
 	description: string | null;
-	schema: {
-		fields: Field[];
-		submitText?: string;
-	};
+	schema: FormSchema;
 	created_at: string;
 	updated_at: string;
 }

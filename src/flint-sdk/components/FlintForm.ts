@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { TailwindElement } from '../../shared/tailwind.element';
 import { Field, FormSchema } from '../types';
+import { FlintSDK } from '../FlintSDK';
 
 const styles = css`
 	.form-field {
@@ -39,15 +40,51 @@ const styles = css`
 
 @customElement('flint-form')
 export class FlintForm extends TailwindElement(styles) {
-	@property({ type: Object }) schema!: FormSchema;
+	@property({ type: Object }) schema?: FormSchema;
 	@property({ type: Object }) data: Record<string, any> = {};
+	@property({ type: String }) formId: string = '';
+	@property({ type: Object }) flintSdk?: FlintSDK;
 
 	@state() private formData: Record<string, any> = {};
 	@state() private errors: Record<string, string> = {};
+	@state() private loading = true;
+	@state() private error: string | null = null;
+	private _flintSdkInstance?: FlintSDK;
 
-	connectedCallback() {
+	async connectedCallback() {
 		super.connectedCallback();
 		this.formData = { ...this.data };
+
+		// Use provided instance or create a new one if not provided
+		if (!this.flintSdk) {
+			this._flintSdkInstance = new FlintSDK({
+				supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+				supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+			});
+		}
+
+		// Load schema if formId is provided
+		if (this.formId) {
+			await this.loadSchema();
+		}
+	}
+
+	private get getFlintSdk(): FlintSDK {
+		return this.flintSdk || this._flintSdkInstance!;
+	}
+
+	private async loadSchema() {
+		try {
+			console.log('Starting to load schema for formId:', this.formId);
+			this.schema = await this.getFlintSdk.loadSchema(this.formId);
+			console.log('Schema loaded successfully:', this.schema);
+			this.error = null;
+		} catch (err) {
+			console.error('Failed to load form schema:', err);
+			this.error = 'Failed to load form. Please try again later.';
+		} finally {
+			this.loading = false;
+		}
 	}
 
 	private handleInput(field: Field, value: any) {
@@ -80,7 +117,7 @@ export class FlintForm extends TailwindElement(styles) {
 		return true;
 	}
 
-	private handleSubmit(e: Event) {
+	private async handleSubmit(e: Event) {
 		e.preventDefault();
 		if (!this.schema) return;
 
@@ -89,14 +126,51 @@ export class FlintForm extends TailwindElement(styles) {
 			this.validateField(field, this.formData[field.name])
 		);
 
-		if (isValid) {
-			this.dispatchEvent(
-				new CustomEvent('submit', {
-					detail: { data: this.formData },
-					bubbles: true,
-					composed: true,
-				})
-			);
+		if (!isValid) return;
+
+		// Dispatch the form-submit event
+		const submitEvent = new CustomEvent('form-submit', {
+			detail: {
+				data: this.formData,
+				formId: this.formId,
+				preventDefault: () => {
+					/* noop */
+				},
+				defaultPrevented: false,
+			},
+			bubbles: true,
+			cancelable: true,
+			composed: true,
+		});
+
+		const wasNotCancelled = this.dispatchEvent(submitEvent);
+
+		// If no one is listening to form-submit or if default wasn't prevented
+		if (wasNotCancelled) {
+			try {
+				const flintSdk = this.getFlintSdk;
+				if (flintSdk && this.formId) {
+					await flintSdk.submitForm(this.formId, this.formData);
+					// Dispatch success event
+					this.dispatchEvent(
+						new CustomEvent('submit-success', {
+							detail: { data: this.formData },
+							bubbles: true,
+							composed: true,
+						})
+					);
+				}
+			} catch (error) {
+				console.error('Form submission failed:', error);
+				// Dispatch error event
+				this.dispatchEvent(
+					new CustomEvent('submit-error', {
+						detail: { error },
+						bubbles: true,
+						composed: true,
+					})
+				);
+			}
 		}
 	}
 
@@ -178,8 +252,20 @@ export class FlintForm extends TailwindElement(styles) {
 	}
 
 	render() {
+		if (this.loading) {
+			return html`<div class="text-center py-4">Loading form...</div>`;
+		}
+
+		if (this.error) {
+			return html`
+				<div class="text-red-600 p-4 rounded bg-red-50">
+					<p>${this.error}</p>
+				</div>
+			`;
+		}
+
 		if (!this.schema) {
-			return html`<p>No schema provided</p>`;
+			return html`<p>No form schema available</p>`;
 		}
 
 		return html`

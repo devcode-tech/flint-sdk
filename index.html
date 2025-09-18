@@ -12,18 +12,10 @@
 
 			<!-- Flint Form -->
 			<div class="p-6 rounded-lg shadow-md mb-8 bg-red-50">
-				<flint-form id="my-form"></flint-form>
-			</div>
-
-			<!-- Loading State -->
-			<div id="loading" class="text-center py-4">
-				<p>Loading form...</p>
-			</div>
-
-			<!-- Error State -->
-			<div id="error" class="hidden text-red-600 p-4 rounded bg-red-50 mb-4">
-				<p>Error loading form. Please try again later.</p>
-				<pre id="error-details" class="text-xs mt-2 text-red-500"></pre>
+				<flint-form
+					id="my-form"
+					formId="fc3b8b79-61c0-4aa4-861a-7573e02da67d"
+				></flint-form>
 			</div>
 
 			<!-- Existing test components -->
@@ -41,92 +33,71 @@
 		<script type="module">
 			import { FlintSDK } from '/dist/flint-sdk.js';
 
-			// Get the form ID from URL or use a default
-			const urlParams = new URLSearchParams(window.location.search);
-			const formId =
-				urlParams.get('formId') || 'c6994dfc-de19-48fe-8674-64bea10d0d13';
-
 			// Initialize the SDK with configuration
 			const flint = new FlintSDK({
 				supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
 				supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
 			});
 
-			document.addEventListener('DOMContentLoaded', async () => {
-				const form = document.getElementById('my-form');
-				const loadingEl = document.getElementById('loading');
-				const errorEl = document.getElementById('error');
-				const errorDetails = document.getElementById('error-details');
+			// Wait for the DOM to be fully loaded and custom elements to be defined
+			// 	customElements.whenDefined('flint-form').then(() => {
+			// 		document.addEventListener('DOMContentLoaded', async () => {
+			// 			const form = document.getElementById('my-form');
+			// 			const loadingEl = document.getElementById('loading');
+			// 			const errorEl = document.getElementById('error');
+			// 			const errorDetails = document.getElementById('error-details');
 
-				try {
-					console.log(formId);
+			// 			try {
+			// 				const formId = 'fc3b8b79-61c0-4aa4-861a-7573e02da67d'; // Your default form ID
 
-					// Load the schema from Supabase
-					const schema = await flint.loadSchema(formId);
+			// 				// Optional: Add custom form submission handler if needed
+			// 				const handleFormSubmit = async e => {
+			// 					// This is now optional - form will work even without this handler
+			// 					console.log('Custom form submission handler:', e.detail);
+			// 					// If you want to prevent the default submission, call:
+			// 					// e.preventDefault();
+			// 					// Then handle the submission yourself
+			// 				};
 
-					// Set the schema on the form
-					if (form) {
-						form.schema = schema;
-					}
+			// 				// Listen for form submission events (optional)
+			// 				form.addEventListener('form-submit', handleFormSubmit);
 
-					// Hide loading state
-					if (loadingEl) loadingEl.style.display = 'none';
+			// 				// Listen for successful submissions (optional)
+			// 				form.addEventListener('submit-success', e => {
+			// 					console.log('Form submitted successfully:', e.detail);
+			// 					// Show success message
+			// 					alert('Form submitted successfully!');
+			// 				});
 
-					// Add form submission handler
-					if (form) {
-						form.addEventListener('submit', async e => {
-							debugger;
-							e.preventDefault(); // Prevent default form submission
+			// 				// Listen for submission errors (optional)
+			// 				form.addEventListener('submit-error', e => {
+			// 					console.error('Form submission failed:', e.detail.error);
+			// 					// Show error message
+			// 					if (errorEl) {
+			// 						errorEl.classList.remove('hidden');
+			// 						if (errorDetails) {
+			// 							errorDetails.textContent =
+			// 								e.detail.error.message || 'Failed to submit form';
+			// 						}
+			// 					}
+			// 				});
 
-							const submitButton = form.querySelector('button[type="submit"]');
-							const originalButtonText = submitButton?.textContent;
-
-							try {
-								// Show loading state
-								if (submitButton) {
-									submitButton.disabled = true;
-									submitButton.innerHTML = 'Submitting...';
-								}
-
-								// Get form data
-								const formData = form.formData;
-								const schemaId = new URLSearchParams(
-									window.location.search
-								).get('formId');
-
-								// Here you can manipulate formData if needed before submission
-								// For example: formData.processed = true;
-
-								// Submit the form
-								const response = await flint.submitForm(schemaId, formData);
-								console.log('Form submitted successfully:', response);
-
-								// Show success message or redirect
-								alert('Form submitted successfully!');
-							} catch (error) {
-								console.error('Failed to submit form:', error);
-								alert('Failed to submit form. Please try again.');
-							} finally {
-								// Reset button state
-								if (submitButton) {
-									submitButton.disabled = false;
-									submitButton.textContent = originalButtonText;
-								}
-							}
-						});
-					}
-				} catch (error) {
-					console.error('Failed to load form:', error);
-					if (loadingEl) loadingEl.style.display = 'none';
-					if (errorEl) {
-						errorEl.classList.remove('hidden');
-						if (errorDetails) {
-							errorDetails.textContent =
-								error.message || 'Unknown error occurred';
-						}
-					}
-				}
-			});
+			// 				// Hide loading state
+			// 				if (loadingEl) loadingEl.style.display = 'none';
+			// 			} catch (error) {
+			// 				console.error('Failed to initialize form:', error);
+			// 				if (loadingEl) loadingEl.style.display = 'none';
+			// 				if (errorEl) {
+			// 					errorEl.classList.remove('hidden');
+			// 					if (errorDetails) {
+			// 						errorDetails.textContent =
+			// 							error.message || 'Unknown error occurred';
+			// 					}
+			// 				}
+			// 			}
+			// 		});
+			// 	});
+			//
 		</script>
 
 		<!-- Existing component scripts -->

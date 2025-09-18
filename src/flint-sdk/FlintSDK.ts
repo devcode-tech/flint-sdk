@@ -54,31 +54,31 @@ export class FlintSDK {
 				.from(this.TABLE_NAME)
 				.select('*')
 				.eq('id', schemaId)
-				.single<DatabaseFormSchema>();
+				.single();
 
 			if (error) {
-				throw new Error(`Failed to load schema: ${error.message}`);
+				throw error;
 			}
 
 			if (!data) {
-				throw new Error(
-					`Schema with ID ${schemaId} not found in table ${this.TABLE_NAME}`
-				);
+				throw new Error(`No schema found with ID: ${schemaId}`);
 			}
 
-			// Convert from database format to FormSchema
+			// Parse the schema from the database
+			const dbSchema = data as unknown as DatabaseFormSchema;
+
+			// Return the schema with fields from the nested schema object
 			return {
-				id: data.id,
-				title: data.title,
-				description: data.description,
-				fields: data.schema?.fields || [],
-				submitText: data.schema?.submitText,
-				created_at: data.created_at,
-				updated_at: data.updated_at,
+				id: dbSchema.id,
+				title: dbSchema.title,
+				description: dbSchema.description,
+				fields: dbSchema.schema.fields || [],
+				submitText: dbSchema.schema.submitText,
+				created_at: dbSchema.created_at,
+				updated_at: dbSchema.updated_at,
 			};
 		} catch (error) {
-			console.error('Error in loadSchema:', error);
-			throw error;
+			throw error; // Re-throw to be handled by the caller
 		}
 	}
 
@@ -92,6 +92,7 @@ export class FlintSDK {
 			title: schema.title,
 			description: schema.description || null,
 			schema: {
+				title: schema.title,
 				fields: schema.fields || [],
 				submitText: schema.submitText,
 			},
